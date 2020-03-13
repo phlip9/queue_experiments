@@ -1,6 +1,6 @@
 use futures::poll;
 use queue_experiments::bilock::BiLock;
-use tokio_test::{assert_err, assert_ok, assert_pending, assert_ready, task};
+use tokio_test::{assert_pending, assert_ready, task};
 
 #[tokio::test]
 async fn bilock_basic() {

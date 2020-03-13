@@ -289,6 +289,7 @@ impl MaybeWaker {
         self.0.take().map(Waker::wake);
     }
 
+    #[allow(dead_code)]
     fn register(&mut self, waker: Waker) {
         self.0 = Some(waker);
     }
