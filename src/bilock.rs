@@ -1,7 +1,7 @@
 //! Futures-powered synchronization primitives.
 #![allow(unused)]
 
-use crate::loom::sync::atomic::AtomicUsize;
+use crate::loom::{cell::CausalCell, sync::atomic::AtomicUsize};
 use futures::{
     future::Future,
     poll,
@@ -43,7 +43,7 @@ pub struct BiLock<T> {
 #[derive(Debug)]
 struct Inner<T> {
     state: AtomicUsize,
-    value: Option<UnsafeCell<T>>,
+    value: CausalCell<T>,
 }
 
 unsafe impl<T: Send> Send for Inner<T> {}
@@ -64,7 +64,7 @@ impl<T> BiLock<T> {
     pub fn new(t: T) -> (BiLock<T>, BiLock<T>) {
         let arc = Arc::new(Inner {
             state: AtomicUsize::new(0),
-            value: Some(UnsafeCell::new(t)),
+            value: CausalCell::new(t),
         });
 
         (BiLock { arc: arc.clone() }, BiLock { arc })
@@ -162,12 +162,6 @@ impl<T> BiLock<T> {
     }
 }
 
-impl<T: Unpin> Inner<T> {
-    unsafe fn into_value(mut self) -> T {
-        self.value.take().unwrap().into_inner()
-    }
-}
-
 impl<T> Drop for Inner<T> {
     fn drop(&mut self) {
         assert_eq!(self.state.load(SeqCst), 0);
@@ -187,13 +181,19 @@ pub struct BiLockGuard<'a, T> {
 impl<T> Deref for BiLockGuard<'_, T> {
     type Target = T;
     fn deref(&self) -> &T {
-        unsafe { &*self.bilock.arc.value.as_ref().unwrap().get() }
+        self.bilock
+            .arc
+            .value
+            .with(|value_ptr| unsafe { &*value_ptr })
     }
 }
 
 impl<T: Unpin> DerefMut for BiLockGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut T {
-        unsafe { &mut *self.bilock.arc.value.as_ref().unwrap().get() }
+        self.bilock
+            .arc
+            .value
+            .with_mut(|value_ptr| unsafe { &mut *value_ptr })
     }
 }
 
@@ -202,7 +202,7 @@ impl<T> BiLockGuard<'_, T> {
     pub fn as_pin_mut(&mut self) -> Pin<&mut T> {
         // Safety: we never allow moving a !Unpin value out of a bilock, nor
         // allow mutable access to it
-        unsafe { Pin::new_unchecked(&mut *self.bilock.arc.value.as_ref().unwrap().get()) }
+        unsafe { Pin::new_unchecked(self.bilock.arc.value.with_mut(|value_ptr| &mut *value_ptr)) }
     }
 }
 

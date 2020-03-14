@@ -21,6 +21,7 @@ pub(crate) mod sync {
 pub(crate) mod cell {
     use std::cell::UnsafeCell;
 
+    #[derive(Debug)]
     pub(crate) struct CausalCell<T>(UnsafeCell<T>);
 
     impl<T> CausalCell<T> {

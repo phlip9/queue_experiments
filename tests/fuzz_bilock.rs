@@ -5,33 +5,42 @@ extern crate loom;
 mod bilock;
 
 use bilock::BiLock;
-use loom::{cell::CausalCell, future::block_on, thread};
+use loom::{future::block_on, thread};
 
 #[test]
 fn bilock_fuzz_contended_lock() {
     loom::model(|| {
         // use inner CausalCell so loom can check that BiLock actually provides
         // mutually exclusive mutable access.
-        let (x, y) = BiLock::new(CausalCell::new(1));
+        let (x, y) = BiLock::new(1);
 
         let th1 = thread::spawn(move || {
-            block_on(x.lock()).with_mut(|v| unsafe { *v += 1 });
-            block_on(x.lock()).with_mut(|v| unsafe { *v += 1 });
-            // block_on(x.lock()).with_mut(|v| unsafe { *v += 1 });
+            {
+                let mut lock = block_on(x.lock());
+                *lock += 1;
+            }
+            {
+                let mut lock = block_on(x.lock());
+                *lock += 1;
+            }
         });
 
         let th2 = thread::spawn(move || {
-            block_on(y.lock()).with_mut(|v| unsafe { *v += 10 });
-            block_on(y.lock()).with_mut(|v| unsafe { *v += 10 });
-            // block_on(y.lock()).with_mut(|v| unsafe { *v += 10 });
+            {
+                let mut lock = block_on(y.lock());
+                *lock += 10;
+            }
+            {
+                let mut lock = block_on(y.lock());
+                *lock += 10;
+            }
             y
         });
 
         th1.join().unwrap();
         let y = th2.join().unwrap();
 
-        let v = block_on(y.lock()).with_mut(|v| unsafe { *v });
+        let v = *block_on(y.lock());
         assert_eq!(23, v);
-        // assert_eq!(34, v);
     });
 }
