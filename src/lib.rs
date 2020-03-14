@@ -1,4 +1,6 @@
+mod atomic_waker;
+mod loom;
+
 pub mod arc_cell;
 pub mod bilock;
-mod loom;
 pub mod spsc_lock;
