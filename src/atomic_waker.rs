@@ -1,13 +1,11 @@
 // AtomicWaker implementation extracted from
 // https://github.com/rust-lang/futures-rs/blob/3c09c69721e65d150d3bb3e99aa6e51798d2ae1a/futures-core/src/task/__internal/atomic_waker.rs
 
+use crate::loom::{cell::CausalCell, sync::atomic::AtomicUsize};
+
 use std::{
-    cell::UnsafeCell,
     fmt,
-    sync::atomic::{
-        AtomicUsize,
-        Ordering::{AcqRel, Acquire, Release},
-    },
+    sync::atomic::Ordering::{AcqRel, Acquire, Release},
     task::Waker,
 };
 
@@ -38,7 +36,7 @@ use std::{
 /// guaranteed for the winning call.
 pub struct AtomicWaker {
     state: AtomicUsize,
-    waker: UnsafeCell<Option<Waker>>,
+    waker: CausalCell<Option<Waker>>,
 }
 
 // `AtomicWaker` is a multi-consumer, single-producer transfer cell. The cell
@@ -154,7 +152,7 @@ impl AtomicWaker {
 
         AtomicWaker {
             state: AtomicUsize::new(WAITING),
-            waker: UnsafeCell::new(None),
+            waker: CausalCell::new(None),
         }
     }
 
@@ -213,7 +211,8 @@ impl AtomicWaker {
             WAITING => {
                 unsafe {
                     // Locked acquired, update the waker cell
-                    *self.waker.get() = Some(waker.clone());
+                    self.waker
+                        .with_mut(|waker_ptr| *waker_ptr = Some(waker.clone()));
 
                     // Release the lock. If the state transitioned to include
                     // the `WAKING` bit, this means that at least one wake has
@@ -246,7 +245,9 @@ impl AtomicWaker {
 
                             // Take the waker to wake once the atomic operation has
                             // completed.
-                            let waker = (*self.waker.get()).take().unwrap();
+                            let waker = self
+                                .waker
+                                .with_mut(|waker_ptr| (*waker_ptr).take().unwrap());
 
                             // We need to return to WAITING state (clear our lock and
                             // concurrent WAKING flag). This needs to acquire all
@@ -320,7 +321,9 @@ impl AtomicWaker {
         match self.state.fetch_or(WAKING, AcqRel) {
             WAITING => {
                 // The waking lock has been acquired.
-                let waker = unsafe { (*self.waker.get()).take() };
+                let waker = self
+                    .waker
+                    .with_mut(|waker_ptr| unsafe { (*waker_ptr).take() });
 
                 // Release the lock
                 self.state.fetch_and(!WAKING, Release);

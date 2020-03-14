@@ -5,10 +5,7 @@ extern crate loom;
 mod arc_cell;
 
 use arc_cell::ArcCell;
-use loom::{
-    sync::{Arc, CausalCell},
-    thread,
-};
+use loom::{cell::CausalCell, sync::Arc, thread};
 
 // TODO(philiphayes): https://github.com/tokio-rs/loom/pull/47
 

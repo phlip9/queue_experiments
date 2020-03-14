@@ -5,7 +5,7 @@ extern crate loom;
 mod bilock;
 
 use bilock::BiLock;
-use loom::{future::block_on, sync::CausalCell, thread};
+use loom::{cell::CausalCell, future::block_on, thread};
 
 #[test]
 fn bilock_fuzz_contended_lock() {

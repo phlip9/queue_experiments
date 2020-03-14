@@ -1,3 +1,6 @@
+// silence dead code warnings for the time being until things stabilize
+#![allow(dead_code)]
+
 mod atomic_waker;
 mod loom;
 
