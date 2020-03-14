@@ -11,13 +11,13 @@ use futures::{
 };
 use loom::{future::block_on, thread};
 use spsc_lock::channel;
-use std::{pin::Pin, task::Poll};
+use std::{num::NonZeroUsize, pin::Pin, task::Poll};
 use tokio_test::{assert_err, assert_ok};
 
 #[test]
 fn spsc_lock_fuzz_send_recv() {
     loom::model(|| {
-        let (mut tx, mut rx) = channel(2);
+        let (mut tx, mut rx) = channel(NonZeroUsize::new(2).unwrap());
 
         let th_tx = thread::spawn(move || {
             assert_ok!(block_on(tx.send(1)));
@@ -42,7 +42,7 @@ fn spsc_lock_fuzz_send_recv() {
 #[test]
 fn spsc_lock_fuzz_send_close() {
     loom::model(|| {
-        let (tx, mut rx) = channel::<()>(1);
+        let (tx, mut rx) = channel::<()>(NonZeroUsize::new(1).unwrap());
 
         let th_rx = thread::spawn(move || {
             assert_eq!(None, block_on(rx.recv()));
@@ -60,7 +60,7 @@ fn spsc_lock_fuzz_send_close() {
 #[test]
 fn spsc_lock_fuzz_recv_close() {
     loom::model(|| {
-        let (mut tx, rx) = channel(1);
+        let (mut tx, rx) = channel(NonZeroUsize::new(1).unwrap());
 
         let th_tx = thread::spawn(move || {
             if block_on(tx.send(1)).is_ok() {
@@ -80,7 +80,7 @@ fn spsc_lock_fuzz_recv_close() {
 #[test]
 fn spsc_lock_change_rx_task() {
     loom::model(|| {
-        let (mut tx, mut rx) = channel(1);
+        let (mut tx, mut rx) = channel(NonZeroUsize::new(1).unwrap());
 
         let th_tx = thread::spawn(move || {
             block_on(tx.send(1)).unwrap();
@@ -118,7 +118,7 @@ fn spsc_lock_change_rx_task() {
 #[test]
 fn spsc_lock_change_tx_task() {
     loom::model(|| {
-        let (mut tx, mut rx) = channel(1);
+        let (mut tx, mut rx) = channel(NonZeroUsize::new(1).unwrap());
 
         let th_tx = thread::spawn(move || {
             let ready = block_on(future::poll_fn(|cx| {

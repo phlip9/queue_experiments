@@ -1,6 +1,7 @@
 use crate::loom::sync::{Arc, Mutex};
 use futures::{future, ready, sink::Sink, stream::Stream};
 use std::{
+    num::NonZeroUsize,
     pin::Pin,
     task::{Context, Poll, Waker},
 };
@@ -39,10 +40,9 @@ pub enum SendError {
 // 2.3 Ks
 // 2.45 Ks
 
-pub fn channel<T>(capacity: usize) -> (Sender<T>, Receiver<T>) {
-    assert!(capacity > 0, "cannot have a zero-capacity spsc channel");
-
+pub fn channel<T>(capacity: NonZeroUsize) -> (Sender<T>, Receiver<T>) {
     let capacity = capacity
+        .get()
         .checked_next_power_of_two()
         .expect("capacity is too large");
 

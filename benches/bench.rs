@@ -9,6 +9,7 @@ use heck::SnakeCase;
 use queue_experiments::spsc_lock;
 use std::{
     marker::PhantomData,
+    num::NonZeroUsize,
     pin::Pin,
     task::{Context, Poll},
     thread,
@@ -126,7 +127,7 @@ impl<T: Send> QueueFactory<T> for SpscLock<T> {
     type Receiver = spsc_lock::Receiver<T>;
 
     fn new(capacity: usize) -> (Self::Sender, Self::Receiver) {
-        spsc_lock::channel::<T>(capacity)
+        spsc_lock::channel::<T>(NonZeroUsize::new(capacity).unwrap())
     }
 }
 
@@ -252,7 +253,7 @@ where
     });
 
     b.iter(|| {
-        let (tx, mut rx) = spsc_lock::channel(queue_size);
+        let (tx, mut rx) = spsc_lock::channel(NonZeroUsize::new(queue_size).unwrap());
 
         bench_start_tx.send(tx).unwrap();
 
