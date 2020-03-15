@@ -1,10 +1,4 @@
-extern crate loom;
-
-#[allow(dead_code)]
-#[path = "../src/bilock.rs"]
-mod bilock;
-
-use bilock::BiLock;
+use crate::bilock::BiLock;
 use loom::{future::block_on, thread};
 
 #[test]

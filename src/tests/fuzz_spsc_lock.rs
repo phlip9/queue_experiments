@@ -1,16 +1,10 @@
-extern crate loom;
-
-#[allow(dead_code)]
-#[path = "../src/spsc_lock.rs"]
-mod spsc_lock;
-
+use crate::spsc_lock::channel;
 use futures::{
     future,
     sink::Sink,
     stream::{Stream, StreamExt},
 };
 use loom::{future::block_on, thread};
-use spsc_lock::channel;
 use std::{num::NonZeroUsize, pin::Pin, task::Poll};
 use tokio_test::{assert_err, assert_ok};
 

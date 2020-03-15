@@ -1,10 +1,4 @@
-extern crate loom;
-
-#[allow(dead_code)]
-#[path = "../src/arc_cell.rs"]
-mod arc_cell;
-
-use arc_cell::ArcCell;
+use crate::arc_cell::ArcCell;
 use loom::{cell::CausalCell, sync::Arc, thread};
 
 // TODO(philiphayes): https://github.com/tokio-rs/loom/pull/47

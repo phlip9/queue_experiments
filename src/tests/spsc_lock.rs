@@ -1,4 +1,4 @@
-use queue_experiments::spsc_lock::channel;
+use crate::spsc_lock::channel;
 use std::num::NonZeroUsize;
 use tokio_test::{assert_err, assert_ok};
 
