@@ -18,6 +18,8 @@ pub enum SendError {
 #[derive(Debug)]
 struct MaybeWaker(Option<Waker>);
 
+impl<T: Unpin> Unpin for Queue<T> {}
+
 impl<T> Queue<T> {
     pub(crate) fn new(capacity: usize) -> Self {
         debug_assert!(capacity > 0);

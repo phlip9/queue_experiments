@@ -14,4 +14,5 @@ mod mutex_queue;
 
 pub mod arc_cell;
 pub mod bilock;
+pub mod spsc_bilock;
 pub mod spsc_lock;

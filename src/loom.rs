@@ -10,6 +10,15 @@ pub(crate) use self::mocked::*;
 // Use std/real implementations otherwise.
 #[cfg(not(all(test, loom)))]
 mod std {
+    pub(crate) mod future {
+        pub(crate) use futures::executor::block_on;
+    }
+
+    pub(crate) mod thread {
+        #[inline]
+        pub(crate) fn yield_now() {}
+    }
+
     pub(crate) mod sync {
         pub(crate) use std::sync::{atomic, Arc};
 

@@ -1,7 +1,7 @@
 //! Futures-powered synchronization primitives.
 #![allow(unused)]
 
-use crate::loom::{cell::CausalCell, sync::atomic::AtomicUsize};
+use crate::loom::{self, cell::CausalCell, sync::atomic::AtomicUsize};
 use futures::{
     future::Future,
     poll,
@@ -128,6 +128,8 @@ impl<T> BiLock<T> {
                 // that task to ever block itself.
                 Err(n) => panic!("invalid state: {}", n),
             }
+
+            loom::thread::yield_now;
         }
     }
 
